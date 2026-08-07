@@ -1,5 +1,5 @@
 /* Драфт-асистент — service worker */
-const VERSION = 'draft-v1';
+const VERSION = 'draft-v39';
 const SHELL = VERSION + '-shell';
 const RUNTIME = VERSION + '-runtime';
 
@@ -57,8 +57,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Шрифти Google: stale-while-revalidate у runtime-кеші
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+  // Шрифти Google + дані й портрети BrawlAPI/Brawlify: stale-while-revalidate у runtime-кеші
+  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com' ||
+      url.hostname === 'api.brawlapi.com' || url.hostname === 'cdn.brawlify.com') {
     event.respondWith(
       caches.open(RUNTIME).then(cache =>
         cache.match(req).then(cached => {
@@ -70,6 +71,13 @@ self.addEventListener('fetch', event => {
         })
       )
     );
+    return;
+  }
+
+  // GoatCounter: аналітика має йти напряму в мережу, ніколи не кешується —
+  // інакше рахуватиме офлайн-запити чи взагалі не рахуватиме нових відвідувань
+  if (url.hostname === 'gc.zgo.at' || url.hostname.endsWith('.goatcounter.com')) {
+    event.respondWith(fetch(req).catch(() => new Response(null, {status: 204})));
     return;
   }
 
